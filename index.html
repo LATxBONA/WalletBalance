@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Wallet Balance</title>
   <style>
     body {
@@ -41,7 +41,7 @@
     th {
       background-color: #e2f0d9;
     }
-    .edit-btn, .update-btn {
+    .edit-btn {
       padding: 4px 8px;
       margin: 2px;
       cursor: pointer;
@@ -54,23 +54,23 @@
   <div id="expense-form">
     <div class="form-group">
       <label>Ngày:</label>
-      <input type="date" id="date">
+      <input type="date" id="date" />
     </div>
     <div class="form-group">
       <label>Tên chi phí:</label>
-      <input type="text" id="title">
+      <input type="text" id="title" />
     </div>
     <div class="form-group">
       <label>Tổng tiền (đ):</label>
-      <input type="number" id="amount">
+      <input type="number" id="amount" />
     </div>
     <div class="form-group">
       <label>Người trả:</label>
-      <input type="text" id="payer">
+      <input type="text" id="payer" />
     </div>
     <div class="form-group">
       <label>Người tham gia (phân cách bằng dấu phẩy):</label>
-      <input type="text" id="participants" placeholder="Ví dụ: Lợi, Tú, Nguyệt">
+      <input type="text" id="participants" placeholder="Ví dụ: Lợi, Tú, Nguyệt, ..." />
     </div>
     <button onclick="addExpense()">Thêm chi phí</button>
   </div>
@@ -104,15 +104,14 @@
     <tbody></tbody>
   </table>
 
-<footer style="margin-top: 60px; padding: 20px 10px; background-color: #e9ecef; border-top: 1px solid #ccc;">
-  <p style="text-align: center; color: #555; margin: 0; font-size: 14px;">
-    © 2025 <strong>LATxBONA</strong> — Thiết kế & phát triển bởi <strong>LAT</strong>
-  </p>
-  <p style="text-align: center; color: #777; margin: 5px 0 0 0; font-size: 13px;">
-    Mọi quyền được bảo lưu. | Ứng dụng: <strong>Wallet Balance</strong>
-  </p>
-</footer>
-
+  <footer style="margin-top: 60px; padding: 20px 10px; background-color: #e9ecef; border-top: 1px solid #ccc;">
+    <p style="text-align: center; color: #555; margin: 0; font-size: 14px;">
+      © 2025 <strong>LATxBONA</strong> — Thiết kế & phát triển bởi <strong>LAT</strong>
+    </p>
+    <p style="text-align: center; color: #777; margin: 5px 0 0 0; font-size: 13px;">
+      Mọi quyền được bảo lưu. | Ứng dụng: <strong>Wallet Balance</strong>
+    </p>
+  </footer>
 
   <script>
     const expenses = [];
@@ -127,7 +126,10 @@
       const title = document.getElementById("title").value;
       const amount = parseFloat(document.getElementById("amount").value);
       const payer = document.getElementById("payer").value.trim();
-      const participants = document.getElementById("participants").value.split(",").map(p => p.trim()).filter(p => p);
+      const participants = document.getElementById("participants").value
+        .split(",")
+        .map(p => p.trim())
+        .filter(p => p);
 
       if (!date || !title || !amount || !payer || participants.length === 0) {
         alert("Vui lòng điền đầy đủ thông tin.");
@@ -138,7 +140,12 @@
       expenses.push({ date, title, amount, payer, participants, perPerson });
       updateTable();
       updateSummary();
-      document.getElementById("expense-form").reset();
+
+      // Reset các input (giữ lại ngày)
+      document.getElementById("title").value = "";
+      document.getElementById("amount").value = "";
+      document.getElementById("payer").value = "";
+      document.getElementById("participants").value = "";
     }
 
     function editExpense(index) {
@@ -187,9 +194,9 @@
       const tbody = document.querySelector("#summary-table tbody");
       tbody.innerHTML = "";
       for (const name in summary) {
-        const tr = document.createElement("tr");
         const { paid, owe } = summary[name];
         const balance = paid - owe;
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${name}</td>
           <td>${paid.toLocaleString()} đ</td>

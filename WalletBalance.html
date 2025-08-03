@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Balance</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select, button, textarea {
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #e2f0d9;
+    }
+    .edit-btn, .update-btn {
+      padding: 4px 8px;
+      margin: 2px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wallet Balance</h1>
+
+  <div id="expense-form">
+    <div class="form-group">
+      <label>Ngày:</label>
+      <input type="date" id="date">
+    </div>
+    <div class="form-group">
+      <label>Tên chi phí:</label>
+      <input type="text" id="title">
+    </div>
+    <div class="form-group">
+      <label>Tổng tiền (đ):</label>
+      <input type="number" id="amount">
+    </div>
+    <div class="form-group">
+      <label>Người trả:</label>
+      <input type="text" id="payer">
+    </div>
+    <div class="form-group">
+      <label>Người tham gia (phân cách bằng dấu phẩy):</label>
+      <input type="text" id="participants" placeholder="Ví dụ: Lợi, Tú, Nguyệt">
+    </div>
+    <button onclick="addExpense()">Thêm chi phí</button>
+  </div>
+
+  <h2>Chi tiết</h2>
+  <table id="expense-table">
+    <thead>
+      <tr>
+        <th>Ngày</th>
+        <th>Chi phí</th>
+        <th>Người trả</th>
+        <th>Tham gia</th>
+        <th>Tổng tiền</th>
+        <th>Mỗi người</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Tổng kết</h2>
+  <table id="summary-table">
+    <thead>
+      <tr>
+        <th>Tên</th>
+        <th>Đã trả</th>
+        <th>Cần trả</th>
+        <th>Còn lại</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<footer style="margin-top: 60px; padding: 20px 10px; background-color: #e9ecef; border-top: 1px solid #ccc;">
+  <p style="text-align: center; color: #555; margin: 0; font-size: 14px;">
+    © 2025 <strong>LATxBONA</strong> — Thiết kế & phát triển bởi <strong>LAT</strong>
+  </p>
+  <p style="text-align: center; color: #777; margin: 5px 0 0 0; font-size: 13px;">
+    Mọi quyền được bảo lưu. | Ứng dụng: <strong>Wallet Balance</strong>
+  </p>
+</footer>
+
+
+  <script>
+    const expenses = [];
+
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    function addExpense() {
+      const date = document.getElementById("date").value;
+      const title = document.getElementById("title").value;
+      const amount = parseFloat(document.getElementById("amount").value);
+      const payer = document.getElementById("payer").value.trim();
+      const participants = document.getElementById("participants").value.split(",").map(p => p.trim()).filter(p => p);
+
+      if (!date || !title || !amount || !payer || participants.length === 0) {
+        alert("Vui lòng điền đầy đủ thông tin.");
+        return;
+      }
+
+      const perPerson = amount / participants.length;
+      expenses.push({ date, title, amount, payer, participants, perPerson });
+      updateTable();
+      updateSummary();
+      document.getElementById("expense-form").reset();
+    }
+
+    function editExpense(index) {
+      const exp = expenses[index];
+      document.getElementById("date").value = exp.date;
+      document.getElementById("title").value = exp.title;
+      document.getElementById("amount").value = exp.amount;
+      document.getElementById("payer").value = exp.payer;
+      document.getElementById("participants").value = exp.participants.join(", ");
+      expenses.splice(index, 1);
+      updateTable();
+      updateSummary();
+    }
+
+    function updateTable() {
+      const tbody = document.querySelector("#expense-table tbody");
+      tbody.innerHTML = "";
+      expenses.forEach((exp, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatDate(exp.date)}</td>
+          <td>${exp.title}</td>
+          <td>${exp.payer}</td>
+          <td>${exp.participants.join(", ")}</td>
+          <td>${exp.amount.toLocaleString()} đ</td>
+          <td>${exp.perPerson.toLocaleString()} đ</td>
+          <td><button class="edit-btn" onclick="editExpense(${index})">Sửa</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateSummary() {
+      const summary = {};
+
+      expenses.forEach(exp => {
+        summary[exp.payer] = summary[exp.payer] || { paid: 0, owe: 0 };
+        summary[exp.payer].paid += exp.amount;
+
+        exp.participants.forEach(name => {
+          summary[name] = summary[name] || { paid: 0, owe: 0 };
+          summary[name].owe += exp.perPerson;
+        });
+      });
+
+      const tbody = document.querySelector("#summary-table tbody");
+      tbody.innerHTML = "";
+      for (const name in summary) {
+        const tr = document.createElement("tr");
+        const { paid, owe } = summary[name];
+        const balance = paid - owe;
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td>${paid.toLocaleString()} đ</td>
+          <td>${owe.toLocaleString()} đ</td>
+          <td>${balance >= 0 ? '+' : ''}${balance.toLocaleString()} đ</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,211 +1,376 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Wallet Balance</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wallet Balance - Kết hợp Chia đều & Tính riêng</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
+    :root{--muted:#777;--card:#fff;--bg:#f4f4f4;--accent:#e2f0d9}
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      margin:0;
+      padding:20px;
+      color:#222;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    h1{ text-align:center; margin:6px 0 18px }
+    .card{
+      background:var(--card);
+      padding:14px;
+      border-radius:8px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.06);
+      margin-bottom:18px;
     }
-    .form-group {
-      margin-bottom: 10px;
+    .form-row{ display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+    .form-row > * { flex:1; min-width:0; }
+    label{ font-size:13px; color:var(--muted); margin-bottom:6px; display:block }
+    input[type="text"], input[type="number"], input[type="date"], select {
+      padding:8px 10px;
+      border:1px solid #ddd;
+      border-radius:6px;
+      width:100%;
+      box-sizing:border-box;
+      font-size:14px;
     }
-    label {
-      display: block;
-      margin-bottom: 5px;
+    button {
+      padding:9px 12px;
+      border-radius:6px;
+      border: none;
+      cursor:pointer;
+      background:#1976d2;
+      color:white;
+      font-weight:600;
     }
-    input, select, button, textarea {
-      padding: 8px;
-      width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #e2f0d9;
-    }
-    .edit-btn {
-      padding: 4px 8px;
-      margin: 2px;
-      cursor: pointer;
+    button.ghost { background:transparent; color:#1976d2; border:1px solid #1976d2 }
+    button.remove { background:#d9534f }
+    .small { padding:6px 8px; font-size:13px }
+    .hidden{ display:none }
+    table { width:100%; border-collapse:collapse; margin-top:10px; background:var(--card); }
+    th, td { border:1px solid #e7e7e7; padding:8px; text-align:center; font-size:14px }
+    th { background:var(--accent); font-weight:700 }
+    .ind-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px }
+    .ind-row input[type="text"]{ padding:7px; border-radius:6px; border:1px solid #ddd }
+    .ind-item{ flex:2; min-width:0 }
+    .ind-person{ flex:1; min-width:0 }
+    .ind-amount{ width:120px; flex:0 0 120px }
+    .ind-row .remove-btn { background:#d9534f; color:#fff; border:none; padding:6px 8px; border-radius:6px; cursor:pointer }
+    .footer { text-align:center; color:var(--muted); margin-top:30px; font-size:13px }
+    @media (max-width:700px){
+      .form-row{ flex-direction:column }
+      .ind-row{ flex-direction:column; align-items:stretch }
+      .ind-amount{ width:100% }
     }
   </style>
 </head>
 <body>
-  <h1>Wallet Balance</h1>
 
-  <div id="expense-form">
-    <div class="form-group">
-      <label>Ngày:</label>
-      <input type="date" id="date" />
+  <h1 style="display:flex;justify-content:center;align-items:center;gap:10px;">Wallet Balance — Hỗ trợ Chia đều & Tính riêng<button onclick="clearHistory()" class="small remove" style="margin-left:20px;">Xóa lịch sử</button></h1>
+
+  <div class="card" id="main-form">
+    <div class="form-row">
+      <div style="flex:0 0 180px">
+        <label>Ngày</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label>Tên khoản / Buổi</label>
+        <input type="text" id="title" placeholder="Ví dụ: Buổi đi uống, 27/7 - Nhóm Cậu ơi">
+      </div>
+      <div style="flex:0 0 220px">
+        <label>Người trả</label>
+        <input type="text" id="payer" placeholder="Ai trả hoá đơn (tên)">
+      </div>
     </div>
-    <div class="form-group">
-      <label>Tên chi phí:</label>
-      <input type="text" id="title" />
+
+    <div class="form-row" style="align-items:flex-end">
+      <div style="flex:0 0 200px">
+        <label>Kiểu chia</label>
+        <select id="split-type" onchange="toggleSplitType()">
+          <option value="equal">Chia đều (group)</option>
+          <option value="individual">Tính riêng (mỗi món 1-1)</option>
+        </select>
+      </div>
+
+      <div style="flex:1">
+        <label id="lbl-either">Tùy chọn</label>
+        <div id="equal-section">
+          <input type="number" id="amount" placeholder="Tổng tiền (đ) — chỉ cho Chia đều">
+          <input type="text" id="participants" placeholder="Người tham gia (phân cách bằng dấu phẩy) — chỉ cho Chia đều">
+        </div>
+
+        <div id="individual-section" class="hidden">
+          <div id="individual-list"></div>
+          <div style="display:flex; gap:8px; margin-top:6px">
+            <button type="button" onclick="addIndividualRow()" class="small ghost">+ Thêm dòng món</button>
+            <div style="flex:1"></div>
+          </div>
+          <div style="margin-top:6px; color:var(--muted); font-size:13px">
+            Mỗi dòng = 1 món của 1 người: điền <strong>Tên món</strong> (tùy), <strong>Tên người gọi</strong> và <strong>Số tiền</strong>.
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:0 0 160px">
+        <label style="opacity:0">action</label>
+        <button onclick="addExpense()" style="width:100%">Thêm chi phí</button>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Tổng tiền (đ):</label>
-      <input type="number" id="amount" />
-    </div>
-    <div class="form-group">
-      <label>Người trả:</label>
-      <input type="text" id="payer" />
-    </div>
-    <div class="form-group">
-      <label>Người tham gia (phân cách bằng dấu phẩy):</label>
-      <input type="text" id="participants" placeholder="Ví dụ: Lợi, Tú, Nguyệt, ..." />
-    </div>
-    <button onclick="addExpense()">Thêm chi phí</button>
   </div>
 
-  <h2>Chi tiết</h2>
-  <table id="expense-table">
-    <thead>
-      <tr>
-        <th>Ngày</th>
-        <th>Chi phí</th>
-        <th>Người trả</th>
-        <th>Tham gia</th>
-        <th>Tổng tiền</th>
-        <th>Mỗi người</th>
-        <th>Hành động</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="card">
+    <h2 style="margin:6px 0">Chi tiết</h2>
+    <table id="expense-table">
+      <thead>
+        <tr>
+          <th>Ngày</th>
+          <th>Tên</th>
+          <th>Người trả</th>
+          <th>Chi tiết (ai — số tiền)</th>
+          <th>Tổng</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <h2>Tổng kết</h2>
-  <table id="summary-table">
-    <thead>
-      <tr>
-        <th>Tên</th>
-        <th>Đã trả</th>
-        <th>Cần trả</th>
-        <th>Còn lại</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="card">
+    <h2 style="margin:6px 0">Tổng kết</h2>
+    <table id="summary-table">
+      <thead>
+        <tr><th>Tên</th><th>Đã trả</th><th>Cần trả</th><th>Còn lại</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <footer style="margin-top: 60px; padding: 20px 10px; background-color: #e9ecef; border-top: 1px solid #ccc;">
-    <p style="text-align: center; color: #555; margin: 0; font-size: 14px;">
-      © 2025 <strong>LATxBONA</strong> — Thiết kế & phát triển bởi <strong>LAT</strong>
-    </p>
-    <p style="text-align: center; color: #777; margin: 5px 0 0 0; font-size: 13px;">
-      Mọi quyền được bảo lưu. | Ứng dụng: <strong>Wallet Balance</strong>
-    </p>
-  </footer>
+  <div class="footer">
+    © 2025 <strong>LATxBONA</strong> — Thiết kế & phát triển bởi <strong>LAT</strong><br>
+    Ứng dụng: Wallet Balance — Kết hợp chia đều & tính riêng
+  </div>
 
-  <script>
-    const expenses = [];
+<script>
+  let expenses = [];
 
-    function formatDate(dateStr) {
-      const [year, month, day] = dateStr.split("-");
-      return `${day}/${month}/${year}`;
+  // Hiển thị / ẩn section
+  function toggleSplitType() {
+    const t = document.getElementById('split-type').value;
+    document.getElementById('equal-section').classList.toggle('hidden', t !== 'equal');
+    document.getElementById('individual-section').classList.toggle('hidden', t !== 'individual');
+  }
+
+  // Thêm 1 dòng "món" trong chế độ individual
+  function addIndividualRow(name = '', amount = '', itemName = '') {
+    const list = document.getElementById('individual-list');
+    const div = document.createElement('div');
+    div.className = 'ind-row';
+    div.innerHTML = `
+      <input type="text" class="ind-item" placeholder="Tên món (tuỳ)" value="${escapeHtml(itemName)}">
+      <input type="text" class="ind-person" placeholder="Tên người gọi" value="${escapeHtml(name)}">
+      <input type="number" class="ind-amount" placeholder="Số tiền (đ)" value="${amount === '' ? '' : Number(amount)}">
+      <button type="button" class="remove-btn" onclick="this.parentElement.remove()">X</button>
+    `;
+    list.appendChild(div);
+  }
+
+  // Thêm chi phí (cả 2 kiểu đều & individual)
+  function addExpense() {
+    const date = document.getElementById('date').value;
+    const title = document.getElementById('title').value.trim();
+    const payer = document.getElementById('payer').value.trim();
+    const type = document.getElementById('split-type').value;
+
+    if (!date || !title || !payer) {
+      alert('Vui lòng điền ngày, tên và người trả.');
+      return;
     }
 
-    function addExpense() {
-      const date = document.getElementById("date").value;
-      const title = document.getElementById("title").value;
-      const amount = parseFloat(document.getElementById("amount").value);
-      const payer = document.getElementById("payer").value.trim();
-      const participants = document.getElementById("participants").value
-        .split(",")
-        .map(p => p.trim())
-        .filter(p => p);
+    const exp = { date, title, payer, type, details: [], amount: 0 };
 
-      if (!date || !title || !amount || !payer || participants.length === 0) {
-        alert("Vui lòng điền đầy đủ thông tin.");
+    if (type === 'equal') {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const participants = document.getElementById('participants').value
+        .split(',').map(s => s.trim()).filter(s => s);
+      if (!amount || participants.length === 0) {
+        alert('Chia đều: nhập tổng tiền và ít nhất 1 người tham gia.');
         return;
       }
-
-      const perPerson = amount / participants.length;
-      expenses.push({ date, title, amount, payer, participants, perPerson });
-      updateTable();
-      updateSummary();
-
-      // Reset các input (giữ lại ngày)
-      document.getElementById("title").value = "";
-      document.getElementById("amount").value = "";
-      document.getElementById("payer").value = "";
-      document.getElementById("participants").value = "";
+      const per = amount / participants.length;
+      participants.forEach(name => exp.details.push({ name, owe: per }));
+      exp.amount = amount;
+    } else { // individual
+    const rows = document.querySelectorAll('#individual-list .ind-row');
+    if (rows.length === 0) {
+        alert('Tính riêng: hãy thêm ít nhất 1 dòng món.');
+        return;
     }
+    let total = 0;
+    rows.forEach(r => {
+        const itemName = r.querySelector('.ind-item').value.trim();
+        const names = r.querySelector('.ind-person').value
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s);
+        const amt = parseFloat(r.querySelector('.ind-amount').value);
 
-    function editExpense(index) {
-      const exp = expenses[index];
-      document.getElementById("date").value = exp.date;
-      document.getElementById("title").value = exp.title;
-      document.getElementById("amount").value = exp.amount;
-      document.getElementById("payer").value = exp.payer;
-      document.getElementById("participants").value = exp.participants.join(", ");
-      expenses.splice(index, 1);
-      updateTable();
-      updateSummary();
-    }
+        if (names.length === 0 || !amt || isNaN(amt)) {
+            return; // bỏ qua dòng không hợp lệ
+        }
 
-    function updateTable() {
-      const tbody = document.querySelector("#expense-table tbody");
-      tbody.innerHTML = "";
-      expenses.forEach((exp, index) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${formatDate(exp.date)}</td>
-          <td>${exp.title}</td>
-          <td>${exp.payer}</td>
-          <td>${exp.participants.join(", ")}</td>
-          <td>${exp.amount.toLocaleString()} đ</td>
-          <td>${exp.perPerson.toLocaleString()} đ</td>
-          <td><button class="edit-btn" onclick="editExpense(${index})">Sửa</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function updateSummary() {
-      const summary = {};
-
-      expenses.forEach(exp => {
-        summary[exp.payer] = summary[exp.payer] || { paid: 0, owe: 0 };
-        summary[exp.payer].paid += exp.amount;
-
-        exp.participants.forEach(name => {
-          summary[name] = summary[name] || { paid: 0, owe: 0 };
-          summary[name].owe += exp.perPerson;
+        // Giá mỗi suất → nhân cho số người
+        names.forEach(name => {
+            exp.details.push({ name, owe: amt, itemName });
         });
-      });
-
-      const tbody = document.querySelector("#summary-table tbody");
-      tbody.innerHTML = "";
-      for (const name in summary) {
-        const { paid, owe } = summary[name];
-        const balance = paid - owe;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${name}</td>
-          <td>${paid.toLocaleString()} đ</td>
-          <td>${owe.toLocaleString()} đ</td>
-          <td>${balance >= 0 ? '+' : ''}${balance.toLocaleString()} đ</td>
-        `;
-        tbody.appendChild(tr);
-      }
+        total += amt * names.length; // tổng cộng
+    });
+    if (exp.details.length === 0) {
+        alert('Không có dòng món hợp lệ (cần tên người và số tiền).');
+        return;
     }
-  </script>
+    exp.amount = total;
+}
+
+    // Thêm vào danh sách
+    expenses.push(exp);
+    // cập nhật bảng + summary
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+    renderTable();
+    updateSummary();
+
+    // Reset form (giữ lại ngày theo ý bạn)
+    document.getElementById('title').value = '';
+    document.getElementById('payer').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('participants').value = '';
+    document.getElementById('individual-list').innerHTML = '';
+    // giữ ngày nếu muốn: nothing to do
+  }
+
+  // Render bảng chi tiết với nút Sửa
+  function renderTable() {
+    const tbody = document.querySelector('#expense-table tbody');
+    tbody.innerHTML = '';
+    expenses.forEach((e, idx) => {
+      const detailsTxt = e.details.map(d => {
+        const label = d.itemName ? `${d.itemName}: ` : '';
+        return `${label}${d.name} — ${numberFormat(d.owe)} đ`;
+      }).join('<br>');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${formatDate(e.date)}</td>
+        <td style="text-align:left; padding-left:10px">${escapeHtml(e.title)}</td>
+        <td>${escapeHtml(e.payer)}</td>
+        <td style="text-align:left; padding-left:10px">${detailsTxt}</td>
+        <td>${numberFormat(e.amount)} đ</td>
+        <td>
+          <button class="small" onclick="editExpense(${idx})">Sửa</button>
+          <button class="small remove" onclick="deleteExpense(${idx})">Xóa</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Xóa expense
+  function deleteExpense(i){
+    if(!confirm('Xóa khoản này?')) return;
+    expenses.splice(i,1);
+    renderTable();
+    updateSummary();
+  }
+
+  // Sửa: remove item rồi đưa dữ liệu quay lại form
+  function editExpense(i){
+    const e = expenses.splice(i,1)[0]; // remove and get
+    // fill form
+    document.getElementById('date').value = e.date;
+    document.getElementById('title').value = e.title;
+    document.getElementById('payer').value = e.payer;
+    document.getElementById('split-type').value = e.type;
+    toggleSplitType();
+
+    if (e.type === 'equal') {
+      document.getElementById('amount').value = e.amount;
+      // participants from details
+      const parts = e.details.map(d => d.name).join(', ');
+      document.getElementById('participants').value = parts;
+    } else {
+      // build rows
+      const list = document.getElementById('individual-list');
+      list.innerHTML = '';
+      e.details.forEach(d => addIndividualRow(d.name, d.owe, d.itemName || ''));
+    }
+
+    renderTable();
+    updateSummary();
+    // focus title
+    document.getElementById('title').focus();
+  }
+
+  // Summary tổng kết
+  function updateSummary(){
+    const sum = {};
+    expenses.forEach(e => {
+      // người trả
+      sum[e.payer] = sum[e.payer] || { paid:0, owe:0 };
+      sum[e.payer].paid += e.amount;
+      // chi tiết
+      e.details.forEach(d => {
+        sum[d.name] = sum[d.name] || { paid:0, owe:0 };
+        sum[d.name].owe += d.owe;
+      });
+    });
+    // render
+    const tbody = document.querySelector('#summary-table tbody');
+    tbody.innerHTML = '';
+    Object.keys(sum).sort().forEach(name => {
+      const { paid, owe } = sum[name];
+      const bal = paid - owe;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(name)}</td>
+        <td>${numberFormat(paid)} đ</td>
+        <td>${numberFormat(owe)} đ</td>
+        <td style="font-weight:700">${bal >= 0 ? '+' : ''}${numberFormat(bal)} đ</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Helpers
+  function formatDate(d){
+    if(!d) return '';
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+  function numberFormat(n){ return Number(n).toLocaleString(); }
+  function escapeHtml(s){
+    if(!s) return '';
+    return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  }
+
+  // init default: one row for individual to guide user
+  addIndividualRow();
+
+  // Load saved data
+  window.onload = function() {
+    const saved = localStorage.getItem('expenses');
+    if (saved) {
+      expenses = JSON.parse(saved);
+      renderTable();
+      updateSummary();
+    }
+  };
+
+  // Clear history
+  function clearHistory() {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử?')) {
+      expenses = [];
+      localStorage.removeItem('expenses');
+      renderTable();
+      updateSummary();
+    }
+  }
+</script>
 </body>
 </html>

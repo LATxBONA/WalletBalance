@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h1 style="display:flex;justify-content:center;align-items:center;gap:10px;">Wallet Balance — Hỗ trợ Chia đều & Tính riêng<button onclick="clearHistory()" class="small remove" style="margin-left:20px;">Xóa lịch sử</button></h1>
+  <h1 style="display:flex;justify-content:center;align-items:center;gap:10px;">Wallet Balance — Hỗ trợ Chia tiền</h1>
 
   <div class="card" id="main-form">
     <div class="form-row">
@@ -74,7 +74,7 @@
       </div>
       <div>
         <label>Tên khoản / Buổi</label>
-        <input type="text" id="title" placeholder="Ví dụ: Buổi đi uống, 27/7 - Nhóm Cậu ơi">
+        <input type="text" id="title" placeholder="Ví dụ: Buổi đi ABC - Nhóm xyz ">
       </div>
       <div style="flex:0 0 220px">
         <label>Người trả</label>
@@ -105,7 +105,7 @@
             <div style="flex:1"></div>
           </div>
           <div style="margin-top:6px; color:var(--muted); font-size:13px">
-            Mỗi dòng = 1 món của 1 người: điền <strong>Tên món</strong> (tùy), <strong>Tên người gọi</strong> và <strong>Số tiền</strong>.
+            Mỗi dòng = 1 món <strong>Tên món</strong> (tùy), <strong>Tên người gọi</strong> và <strong>Số tiền</strong>.
           </div>
         </div>
       </div>
@@ -136,6 +136,7 @@
 
   <div class="card">
     <h2 style="margin:6px 0">Tổng kết</h2>
+    <button onclick="clearHistory()" class="small remove" style="margin-left:20px;">Xóa lịch sử</button>
     <table id="summary-table">
       <thead>
         <tr><th>Tên</th><th>Đã trả</th><th>Cần trả</th><th>Còn lại</th></tr>
